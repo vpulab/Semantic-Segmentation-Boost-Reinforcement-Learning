@@ -8,7 +8,9 @@
 [![DOI:10.1007/978-3-319-76207-4_15](https://zenodo.org/badge/DOI/10.1007/978-3-319-76207-4_15.svg)](https://doi.org/10.1007/s11042-022-13695-1)
 
 </p>
+<center>
 <img src="./Images/Mario_example.gif" width="600">
+</center>
 </p>
 <p>
     <em>Left: Original Frame, Right: Segmented frame used as input for the RL model.</em>
@@ -17,7 +19,9 @@
 ## Framework
 
 </p>
-<img src="./Images/framework.png" width="600">
+<center>
+<img src="./Images/framework.png" width="600" >
+</center>
 </p>
 
 The system is composed of three modules, each can be found inside a folder in this repository, along with a small readme on how to use them.
