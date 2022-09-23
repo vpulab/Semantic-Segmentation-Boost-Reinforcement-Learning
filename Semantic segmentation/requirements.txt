@@ -1,0 +1,6 @@
+Pillow
+numpy
+matplotlib
+scipy
+jupyterlab
+ipywidgets

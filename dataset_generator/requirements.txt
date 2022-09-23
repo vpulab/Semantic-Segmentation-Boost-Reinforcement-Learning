@@ -1,0 +1,4 @@
+numpy
+pandas
+opencv-python==4.5.5.64
+tqdm
