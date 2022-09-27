@@ -1,6 +1,5 @@
 # Exploiting Semantic Segmentation To Boost Reinforcement Learning In Video Game Environments
 
-[![made-with-python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/)
 [![Generic badge](https://img.shields.io/badge/Made_with-Python-yellow.svg)](https://shields.io/)
 [![Generic badge](https://img.shields.io/badge/Made_with-Jupyter_Notebooks-orange.svg)](https://shields.io/)
 
