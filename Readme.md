@@ -4,7 +4,7 @@
 [![Generic badge](https://img.shields.io/badge/Made_with-Jupyter_Notebooks-orange.svg)](https://shields.io/)
 
 [![PyPI license](https://img.shields.io/pypi/l/ansicolortags.svg)](https://pypi.python.org/pypi/ansicolortags/)
-[![DOI:10.1007/978-3-319-76207-4_15](https://zenodo.org/badge/DOI/10.1007/978-3-319-76207-4_15.svg)](https://doi.org/10.1007/s11042-022-13695-1)
+[![Generic badge](https://img.shields.io/badge/Paper-DOI-blue.svg)](https://doi.org/10.1007/s11042-022-13695-1)
 
 </p>
 <img src="./Images/Mario_example.gif" width="600">
