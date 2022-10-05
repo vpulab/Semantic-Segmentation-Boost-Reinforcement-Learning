@@ -2,7 +2,6 @@
 
 dataset_generator/dataset
 dataset_generator/Sprites
-RL/
 *.pth 
 
 ####################### Defaults

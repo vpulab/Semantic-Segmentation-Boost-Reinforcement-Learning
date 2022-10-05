@@ -1,0 +1,4 @@
+gym==0.21.0
+nes-py==8.1.6
+gym_super_mario_bros==7.3.2
+pillow
