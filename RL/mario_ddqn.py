@@ -73,6 +73,7 @@ training = args.train
 vis = args.visualization
 level = args.level
 use_tensorboard = args.tensorboard
+
 if use_tensorboard:
     from torch.utils.tensorboard import SummaryWriter
 

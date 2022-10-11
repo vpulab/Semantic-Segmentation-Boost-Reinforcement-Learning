@@ -20,4 +20,4 @@ If you are running on linux, you can use multiple cores to make the generation f
 
     python generate_frames.py -s NUMBER_OF_SAMPLES_TO_GENERATE -c NUMBER_OF_CORES
 
-Dataset will automatically generate on a folder called dataset.
+Dataset will automatically generate in a folder called dataset.

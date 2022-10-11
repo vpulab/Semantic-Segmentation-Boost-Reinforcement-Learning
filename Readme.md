@@ -27,7 +27,7 @@ The system is composed of three modules, each can be found inside a folder in th
 
 The dataset_generator contains all the code we used to create the synthetic frames that resemble videogame frames. 
 
-The semantic_segmentation folder contains the code required to train the DeepLabV3 model with different backbones. These are available as Jupyter notebooks and python files.
+The semantic segmentation folder contains the code required to train the DeepLabV3 model with different backbones. These are available as Jupyter notebooks and python files.
 
 The reinforcement_learning folder contains the different scripts required to run the reinforcement learning algorithm on the super mario bros game with semantic segmentation. 
 
