@@ -65,9 +65,6 @@ parser.add_argument("--save_experience_replay",help="Save the experience replay 
 
 args = parser.parse_args()
 
-if args.help:
-    parser.print_help()
-    exit
 ### Run settings.
 training = args.train
 vis = args.visualization
