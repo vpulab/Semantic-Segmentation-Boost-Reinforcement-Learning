@@ -1,6 +1,6 @@
 # Dataset Generation
 
-This module is used to generate a semantic segmentation dataset with synthetic images that resemble real frames from the Super Mario videogame.
+This module is used to generate a semantic segmentation dataset with synthetic images that resemble real frames from the Super Mario videogame. Tested with python 3.9
 
 ## How to run
 

@@ -1,48 +1,32 @@
 # -*- coding: utf-8 -*-
 
 #### Import packages
-
-
 import os
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
-
-import torch
-import torchvision
-import torch.nn as nn
-import torch.backends.cudnn as cudnn
-import torch.utils.data as data
-from torch import optim
-from torchvision import datasets, transforms, models
-import torch.nn.functional as F
-import torchvision.transforms.functional as TF
-from torch.utils.data import Dataset
-#from torchvision.datasets.utils import download_file_from_google_drive
 
 from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io as sio
 import random
-import sys
 import argparse
 import os
 import time
 from os.path import join
-import csv
+from tqdm import tqdm
 
-parser = argparse.ArgumentParser()
+import torch
+import torch.nn as nn
+import torch.utils.data as data
+from torch import optim
+from torchvision import  transforms, models
+import torch.nn.functional as F
+import torchvision.transforms.functional as TF
+from torchvision.models.segmentation.deeplabv3 import DeepLabHead
+from torchvision import models
 
-parser.add_argument("-o","--output_file",default="MarioSegmentationModel.pth",type=str)
-parser.add_argument("-bs","--batch_size",default=4,type=int)
-parser.add_argument("-d","--dataset",required=True,type=str)
-parser.add_argument("-e","--epochs",default=45,type=int)
-
-args = parser.parse_args()
-
-"""#### Set up Hyperparameters + Enable GPU acceleration"""
-
-class configuration:
-  def __init__(self):
+class Configuration:
+  def __init__(self, args):
     self.experiment_name = "Training the Super Mario Segmentation Model"
     
     # Paramters for the first part
@@ -64,22 +48,6 @@ class configuration:
     self.download   = False
     
     self.seed = 271828
-
-## Create arguments object
-args = configuration()
-
-# Make sure to nable GPU accele#ration!
-device = 'cuda'
-#device = 'cpu'
-
-# Set random seed for reproducibility
-torch.backends.cudnn.deterministic = True  # fix the GPU to deterministic mode
-torch.manual_seed(args.seed)  # CPU seed
-torch.cuda.manual_seed_all(args.seed)  # GPU seed
-random.seed(args.seed)  # python seed for image transformation
-np.random.seed(args.seed)
-
-"""### Dataset class"""
 
 class MarioDataset(data.Dataset):
     def __init__(self, args, mode, transform_input=transforms.ToTensor(), transform_mask=transforms.ToTensor()):
@@ -154,11 +122,8 @@ class MarioDataset(data.Dataset):
     def __len__(self):
         return len(self.imgs)
 
-"""### Training Epoch
-Per-pixel cross-entropy loss is to be computed. 
-"""
 
-def train_SemanticSeg(args, model, device, train_loader, optimizer, epoch):
+def train_epoch(args, model, device, train_loader, optimizer, epoch):
     # switch to train mode
     model.train()
 
@@ -167,9 +132,7 @@ def train_SemanticSeg(args, model, device, train_loader, optimizer, epoch):
 
     criterion = nn.CrossEntropyLoss(ignore_index=255)
     
-    gts_all, predictions_all = [], []
-
-    for batch_idx, (images, mask) in enumerate(train_loader):
+    for _, (images, mask) in enumerate(train_loader):
 
         images, mask = images.to(device), mask.to(device)
 
@@ -194,12 +157,6 @@ def train_SemanticSeg(args, model, device, train_loader, optimizer, epoch):
     
     return sum(train_loss) / len(train_loss) # per batch averaged loss for the current epoch.
 
-"""### Validation epoch
-Per-pixel cross-entropy loss is to be computed. 
-To this iam, we rely on a function to extract the histogram of the predicted classes: _fast_hist
-
-"""
-
 def _fast_hist(label_pred, label_true, num_classes):
     mask = (label_true >= 0) & (label_true < num_classes)
     hist = np.bincount(
@@ -212,13 +169,12 @@ def testing(args, model, device, test_loader):
     model.eval()
 
     loss_per_batch = []
-    test_loss = 0
 
     criterion = nn.CrossEntropyLoss(ignore_index=255)
 
     gts_all, predictions_all = [], []
     with torch.no_grad():
-        for batch_idx, (images, mask) in enumerate(test_loader):
+        for _, (images, mask) in enumerate(test_loader):
 
             images, mask = images.to(device), mask.to(device)
 
@@ -248,99 +204,102 @@ def testing(args, model, device, test_loader):
 
     return (loss_per_epoch, mean_iou)
 
-"""### Dataloaders definition
 
-"""
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
 
-workers = 0 #Anything over 0 will crash on windows. On linux it works fine.
+    parser.add_argument("-o","--output_file",default="MarioSegmentationModel.pth",type=str, help="Name of the model. Will be saved on ./models")
+    parser.add_argument("-bs","--batch_size",default=4,type=int, help="Keep it always 2 or more, otherwise it will crash.") ## 
+    parser.add_argument("-d","--dataset",required=True, help="Path to dataset",type=str)
+    parser.add_argument("-e","--epochs",default=45,type=int,help="Epochs")
 
-trainset = MarioDataset(args, 'train')
-train_loader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=workers, pin_memory=True)
+    args = parser.parse_args()
 
-testset = MarioDataset(args, 'val')
-test_loader = torch.utils.data.DataLoader(testset, batch_size=args.test_batch_size, shuffle=False, num_workers=workers, pin_memory=True)
+    assert args.batch_size != 1, "Please use batch size bigger than 1."
 
-"""### Define model and download pretrained weights."""
+    ## Create arguments object
+    args = Configuration(args)
+    device = 'cuda'
 
-from torchvision.models.segmentation.deeplabv3 import DeepLabHead,DeepLabV3
+    # Set random seed for reproducibility
+    torch.backends.cudnn.deterministic = True  # fix the GPU to deterministic mode
+    torch.manual_seed(args.seed)  # CPU seed
+    torch.cuda.manual_seed_all(args.seed)  # GPU seed
+    random.seed(args.seed)  # python seed for image transformation
+    np.random.seed(args.seed)
 
-from torchvision import models
+    workers = 0 #Anything over 0 will crash on windows. On linux it should work fine.
 
-model = models.segmentation.deeplabv3_resnet50(
-        pretrained=True, progress=True)
-model.classifier = DeepLabHead(2048, 6)
+    trainset = MarioDataset(args, 'train')
+    train_loader = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size, shuffle=True, num_workers=workers, pin_memory=True)
 
-model = model.to(device)
+    testset = MarioDataset(args, 'val')
+    test_loader = torch.utils.data.DataLoader(testset, batch_size=args.test_batch_size, shuffle=False, num_workers=workers, pin_memory=True)
 
-"""### Define the optimizer and the scheduler"""
+    model = models.segmentation.deeplabv3_resnet50(
+            pretrained=True, progress=True)
+    model.classifier = DeepLabHead(2048, 6)
 
-optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=1e-4)
-scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=args.M, gamma=0.1)
+    model = model.to(device)
 
-"""### Training loop for semantic segmentation"""
+    optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=1e-4)
+    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=args.M, gamma=0.1)
 
-loss_train_epoch = []
-loss_test_epoch = []
-acc_train_per_epoch = []
-acc_test_per_epoch = []
-new_labels = []
+    loss_train_epoch = []
+    loss_test_epoch = []
+    acc_train_per_epoch = []
+    acc_test_per_epoch = []
+    new_labels = []
 
-cont = 0
+    cont = 0
 
-for epoch in range(1, args.epoch + 1):
-    st = time.time()
-    
-    print("DeepLabV3_Resnet50 training, epoch " + str(epoch))
-    loss_per_epoch = train_SemanticSeg(args,model,device,train_loader,optimizer,scheduler)
+    if not os.path.isdir("./models/"):
+        os.makedirs("models")
 
-    loss_train_epoch += [loss_per_epoch]
+    for epoch in tqdm(range(1, args.epoch + 1),desc = "DeepLabV3_Resnet50 training, epoch"):
+        st = time.time()
+        loss_per_epoch = train_epoch(args,model,device,train_loader,optimizer,scheduler)
 
-    scheduler.step()
+        loss_train_epoch += [loss_per_epoch]
 
-    loss_per_epoch_test, acc_val_per_epoch_i = testing(args,model,device,test_loader)
+        scheduler.step()
 
-    loss_test_epoch += loss_per_epoch_test
-    acc_test_per_epoch += [acc_val_per_epoch_i]
+        loss_per_epoch_test, acc_val_per_epoch_i = testing(args,model,device,test_loader)
 
-    if epoch == 1:
-        best_acc_val = acc_val_per_epoch_i
-        
-    else:
-        if acc_val_per_epoch_i > best_acc_val:
+        loss_test_epoch += loss_per_epoch_test
+        acc_test_per_epoch += [acc_val_per_epoch_i]
+
+        if epoch == 1:
             best_acc_val = acc_val_per_epoch_i
+            
+        else:
+            if acc_val_per_epoch_i > best_acc_val:
+                best_acc_val = acc_val_per_epoch_i
 
-    if epoch==args.epoch:
-        torch.save(model.state_dict(), "./models/"+args.model_file_name)
+        if epoch==args.epoch:
+            torch.save(model.state_dict(), "./models/"+args.model_file_name)
 
-    
+        
 
-    cont += 1
+        cont += 1
 
-"""### Accuracy and loss curves for semantic segmentation"""
+    ##Accuracy
+    acc_test  = np.asarray(acc_test_per_epoch)
 
-##Accuracy
-acc_test  = np.asarray(acc_test_per_epoch)
+    #Loss per epoch
+    loss_test  = np.asarray(loss_test_epoch)
+    loss_train = np.asarray(loss_train_epoch)
 
-#Loss per epoch
-loss_test  = np.asarray(loss_test_epoch)
-loss_train = np.asarray(loss_train_epoch)
+    numEpochs = len(acc_test)
+    epochs = range(numEpochs)
 
-numEpochs = len(acc_test)
-epochs = range(numEpochs)
+    plt.figure(2)
+    plt.plot(epochs, loss_test, label='Test Semantic, min loss: ' + str(np.min(loss_test)))
+    plt.plot(epochs, loss_train, label='Train Semantic, min loss: ' + str(np.min(loss_train)))
+    plt.ylabel('Loss')
+    plt.xlabel('Epoch')
+    plt.legend(loc='upper right')
 
-plt.figure(1)
-plt.plot(epochs, acc_test, label='Test Semantic, max acc: ' + str(np.max(acc_test)))
-plt.ylabel('Accuracy')
-plt.xlabel('Epoch')
-plt.legend(loc='lower right')
-
-plt.figure(2)
-plt.plot(epochs, loss_test, label='Test Semantic, min loss: ' + str(np.min(loss_test)))
-plt.plot(epochs, loss_train, label='Train Semantic, min loss: ' + str(np.min(loss_train)))
-plt.ylabel('Loss')
-plt.xlabel('Epoch')
-plt.legend(loc='upper right')
-
-plt.show()
+    plt.show()
 
 
