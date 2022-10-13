@@ -1,5 +1,5 @@
 ### How to train the reinforcement learning agent
-
+Tested with python 3.9
 First install requirements.txt
 
 Download the semantic segmentation model from [here](https://drive.google.com/file/d/1JRdPggs5jTWAXKRXk6hVxzmP-KnOr8Hw/view?usp=sharing) and place it inside Segmentation_model

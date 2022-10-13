@@ -1,6 +1,6 @@
 # Dataset Generation
 
-This module is used to train a test a semantic segmentation model to segment super mario bros frames.
+This module is used to train a test a semantic segmentation model to segment super mario bros frames. Tested with python 3.9
 
 ## How to run
 
