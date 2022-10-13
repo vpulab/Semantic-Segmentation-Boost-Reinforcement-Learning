@@ -35,7 +35,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-o","--output_file",default="MarioSegmentationModel.pth",type=str)
 parser.add_argument("-bs","--batch_size",default=4,type=int)
 parser.add_argument("-d","--dataset",required=True,type=str)
-parser.add_argument("-e","--epochs",default=45,type=str)
+parser.add_argument("-e","--epochs",default=45,type=int)
 
 args = parser.parse_args()
 
@@ -53,7 +53,7 @@ class configuration:
     self.training_data_proportion = 0.8 # Proportion of images of the dataset to be used for training
 
     self.lr    = 0.001  # 0.001 if pretrained weights from pytorch. 0.1 if scratch
-    self.epoch = 45     # Play with this if training takes too long
+    self.epoch = args.epochs     # Play with this if training takes too long
     self.M = [37,42]         # If training from scratch, reduce learning rate at some point
 
     self.batch_size = args.batch_size  # Training batch size
@@ -240,10 +240,6 @@ def testing(args, model, device, test_loader):
 
     iou = np.diag(hist) / (hist.sum(axis=1) + hist.sum(axis=0) - np.diag(hist))
 
-    plt.figure()
-    plt.bar(np.arange(args.num_classes), iou)
-    plt.title('Class Accuracy in the validation set ')
-    plt.show()
 
     mean_iou = np.nanmean(iou)
 
